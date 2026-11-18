@@ -1,4 +1,3 @@
--- 03. Ejecutar una sola vez, después de los scripts 01 y 02.
 USE [BDD2_TPI_Basico];
 GO
 

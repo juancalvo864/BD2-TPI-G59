@@ -1,4 +1,3 @@
--- 01. Crear la base, las tablas y sus relaciones.
 CREATE DATABASE [BDD2_TPI_Basico];
 GO
 
@@ -37,7 +36,9 @@ CREATE TABLE dbo.Producto (
     CostoNeto DECIMAL(12,2) NOT NULL,
     MargenGanancia DECIMAL(5,2) NOT NULL,
     PorcentajeIVA DECIMAL(4,2) NOT NULL,
-    PrecioVentaNeto DECIMAL(18,2) NOT NULL DEFAULT 0,
+    PrecioVentaNeto AS (
+        CAST(CostoNeto * (1.0 + MargenGanancia / 100.0) AS DECIMAL(18,2))
+    ) PERSISTED NOT NULL,
     StockActual INT NOT NULL default 0,
     StockMinimo INT not null DEFAULT 0,
     Activo BIT NOT NULL DEFAULT 1,
@@ -103,9 +104,15 @@ CREATE TABLE dbo.DetalleCompraProveedor (
     CostoUnitarioNeto DECIMAL(12,2) NOT NULL,
     PorcentajeDescuento DECIMAL (5,2) NOT NULL,
     PorcentajeIVA DECIMAL(4,2) NOT NULL,
-    PrecioConDescuento DECIMAL(14,2) NOT NULL DEFAULT 0,
-    SubtotalNeto DECIMAL(24,2) NOT NULL DEFAULT 0,
-    SubtotalFinal DECIMAL(24,2) NOT NULL DEFAULT 0,
+    PrecioConDescuento AS (
+        CAST(CostoUnitarioNeto * (1 - PorcentajeDescuento / 100.0) AS DECIMAL(14,2))
+    ) PERSISTED NOT NULL,
+    SubtotalNeto AS (
+        CAST((CostoUnitarioNeto * (1 - PorcentajeDescuento / 100.0)) * Cantidad AS DECIMAL(24,2))
+    ) PERSISTED NOT NULL,
+    SubtotalFinal AS (
+        CAST(((CostoUnitarioNeto * (1 - PorcentajeDescuento / 100.0)) * Cantidad) * (1 + PorcentajeIVA / 100.0) AS DECIMAL(24,2))
+    ) PERSISTED NOT NULL,
 
     CONSTRAINT CK_DetalleCompraProveedor_Cantidad CHECK (Cantidad > 0),
     CONSTRAINT CK_DetalleCompraProveedor_PorcentajeDescuento CHECK (PorcentajeDescuento BETWEEN 0 AND 100),
@@ -139,9 +146,15 @@ CREATE TABLE dbo.DetalleVenta (
     PrecioUnitarioNeto DECIMAL(12,2) NOT NULL,
     PorcentajeDescuento DECIMAL (5,2) NOT NULL,
     PorcentajeIVA DECIMAL(4,2) NOT NULL,
-    PrecioConDescuento DECIMAL(14,2) NOT NULL DEFAULT 0,
-    SubtotalNeto DECIMAL(24,2) NOT NULL DEFAULT 0,
-    SubtotalFinal DECIMAL(24,2) NOT NULL DEFAULT 0,
+    PrecioConDescuento AS (
+        CAST(PrecioUnitarioNeto * (1 - PorcentajeDescuento / 100) AS DECIMAL(14,2))
+    ) PERSISTED NOT NULL,
+    SubtotalNeto AS (
+        CAST((PrecioUnitarioNeto * (1 - PorcentajeDescuento / 100)) * Cantidad AS DECIMAL(24,2))
+    ) PERSISTED NOT NULL,
+    SubtotalFinal AS (
+        CAST(((PrecioUnitarioNeto * (1 - PorcentajeDescuento / 100)) * Cantidad) * (1 + PorcentajeIVA / 100) AS DECIMAL(24,2))
+    ) PERSISTED NOT NULL,
 
     CONSTRAINT CK_DetalleVenta_Cantidad CHECK (Cantidad > 0),
     CONSTRAINT CK_DetalleVenta_PorcentajeDescuento CHECK (PorcentajeDescuento BETWEEN 0 AND 100),
